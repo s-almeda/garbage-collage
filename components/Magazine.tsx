@@ -3,6 +3,7 @@
 import React, { useRef } from "react";
 import HTMLFlipBook from "react-pageflip";
 import * as fabric from "fabric";
+import { useApp } from "@/context/AppContext";
 
 interface MagazineProps {
   canvas: fabric.Canvas;
@@ -25,6 +26,13 @@ Page.displayName = "Page";
 
 export default function Magazine({ canvas }: MagazineProps) {
   const bookRef = useRef<any>(null);
+  const { currentTool } = useApp();
+
+  const getCursorClass = () => {
+    if (currentTool === "hand") return "cursor-grab";
+    if (currentTool === "scissors-rectangle" || currentTool === "scissors-freehand") return "cursor-crosshair";
+    return "cursor-default";
+  };
 
   const spreads = [
     { left: "bg-red-500", right: "bg-blue-500" },
@@ -33,7 +41,7 @@ export default function Magazine({ canvas }: MagazineProps) {
   ];
 
   return (
-    <div className="absolute z-20 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+    <div className={`absolute z-20 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${getCursorClass()}`}>
       <HTMLFlipBook
         width={400}
         height={500}

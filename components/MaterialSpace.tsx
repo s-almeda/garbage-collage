@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import * as fabric from "fabric";
 import Magazine from "./Magazine";
 import Toolbar from "./Toolbar";
+import MaterialDrawer from "./MaterialDrawer";
+import { useApp } from "@/context/AppContext";
 
 interface MaterialSpaceProps {
   onToggle: () => void;
@@ -14,6 +16,13 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [showContent, setShowContent] = useState(false);
+  const { currentTool } = useApp();
+
+  const getCursorClass = () => {
+    if (currentTool === "hand") return "cursor-grab";
+    if (currentTool === "scissors-rectangle" || currentTool === "scissors-freehand") return "cursor-crosshair";
+    return "cursor-default";
+  };
 
   useEffect(() => {
     if (isActive) {
@@ -59,7 +68,7 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
   }, []);
 
   return (
-    <div className="relative h-screen w-full bg-stone-800">
+    <div className={`relative h-screen w-full bg-stone-800 ${getCursorClass()}`}>
       <canvas ref={canvasRef} id="materialCanvas" />
       <button
         onClick={onToggle}
@@ -67,6 +76,7 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
       >
         look up
       </button>
+      {showContent && <MaterialDrawer />}
       {showContent && <Toolbar />}
       {fabricCanvasRef.current && showContent && (
         <Magazine canvas={fabricCanvasRef.current} />
