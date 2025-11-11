@@ -68,15 +68,22 @@ export default function Cutout({ cutout }: CutoutProps) {
         width: cutout.size.width,
         height: cutout.size.height,
         zIndex: 20,
+        filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))',
       }}
       onMouseDown={handleMouseDown}
     >
-      <img
-        src={cutout.imageData}
-        alt="Cutout"
-        className="w-full h-full object-cover pointer-events-none select-none"
-        draggable={false}
-      />
+      {cutout.imageData ? (
+        <img
+          src={cutout.imageData}
+          alt="Cutout"
+          className="w-full h-full object-cover pointer-events-none select-none"
+          draggable={false}
+        />
+      ) : (
+        <div className="w-full h-full bg-stone-400/30 border-2 border-dashed border-stone-400 flex items-center justify-center">
+          <span className="text-stone-500 text-sm">Loading...</span>
+        </div>
+      )}
     </div>
   );
 }

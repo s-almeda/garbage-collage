@@ -37,6 +37,7 @@ interface AppContextType {
   addCutout: (cutout: Cutout) => void;
   removeCutout: (id: string) => void;
   updateCutoutPosition: (id: string, position: { x: number; y: number }) => void;
+  updateCutout: (id: string, updates: Partial<Cutout>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -77,6 +78,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateCutout = (id: string, updates: Partial<Cutout>) => {
+    setCutouts(prev =>
+      prev.map(cutout =>
+        cutout.id === id ? { ...cutout, ...updates } : cutout
+      )
+    );
+  };
+
   return (
     <AppContext.Provider value={{ 
       currentTool, 
@@ -97,6 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addCutout,
       removeCutout,
       updateCutoutPosition,
+      updateCutout,
     }}>
       {children}
     </AppContext.Provider>

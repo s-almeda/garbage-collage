@@ -21,7 +21,7 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const materialSpaceRef = useRef<HTMLDivElement>(null);
   const [showContent, setShowContent] = useState(false);
-  const { currentTool, setCollections, setIsLoadingCollections, magazines, setMagazines, addCutout, cutouts } = useApp();
+  const { currentTool, setCollections, setIsLoadingCollections, magazines, setMagazines, addCutout, updateCutout, cutouts } = useApp();
   const { dragState } = useDnD();
   
   // Selection rectangle state
@@ -113,6 +113,20 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
       
       console.log("✂️ making a cutout", rect);
       
+      // Create placeholder cutout immediately with offset
+      const cutoutId = `cutout-${Date.now()}`;
+      const offsetX = rect.x + 20; // Offset by 20px so it's visible
+      const offsetY = rect.y + 20;
+      
+      const placeholderCutout = {
+        id: cutoutId,
+        imageData: '', // Empty initially
+        position: { x: offsetX, y: offsetY },
+        size: { width: rect.width, height: rect.height }
+      };
+      
+      addCutout(placeholderCutout);
+      
       try {
         // Temporarily hide the selection overlay
         const selectionOverlay = document.querySelector('.selection-overlay') as HTMLElement;
@@ -151,16 +165,9 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
           // Convert to base64
           const imageData = croppedCanvas.toDataURL('image/png');
           
-          // Create cutout
-          const cutout = {
-            id: `cutout-${Date.now()}`,
-            imageData,
-            position: { x: rect.x, y: rect.y },
-            size: { width: rect.width, height: rect.height }
-          };
-          
-          console.log("✂️ cutout created!", cutout.id);
-          addCutout(cutout);
+          // Update cutout with actual image data
+          console.log("✂️ cutout created!", cutoutId);
+          updateCutout(cutoutId, { imageData });
         }
       } catch (error) {
         console.error("✂️ Failed to capture selection:", error);
