@@ -7,6 +7,7 @@ import Toolbar from "./Toolbar";
 import MaterialDrawer from "./MaterialDrawer";
 import { useApp } from "@/context/AppContext";
 import { getAllCollections } from "@/lib/api/collections";
+import { DropZone, DragItem, useDnD } from '@/context/DnDContext';
 
 interface MaterialSpaceProps {
   onToggle: () => void;
@@ -17,12 +18,29 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [showContent, setShowContent] = useState(false);
-  const { currentTool, setCollections, setIsLoadingCollections } = useApp();
+  const { currentTool, setCollections, setIsLoadingCollections, magazines, setMagazines } = useApp();
+  const { dragState } = useDnD();
 
   const getCursorClass = () => {
     if (currentTool === "hand") return "cursor-grab";
     if (currentTool === "scissors-rectangle" || currentTool === "scissors-freehand") return "cursor-crosshair";
     return "cursor-default";
+  };
+
+  const handleDrop = (item: DragItem) => {
+    console.log("handleDrop called with item:", item);
+    if (item.type === 'collection') {
+      console.log("Creating magazine from collection:", item.data);
+      const newMagazine = {
+        id: `magazine-${item.id}-${Date.now()}`,
+        collection: item.data,
+        position: dragState.dragPosition || { x: 400, y: 300 } // fallback position
+      };
+      console.log("New magazine:", newMagazine);
+      setMagazines([...magazines, newMagazine]);
+    } else {
+      console.log("Item type is not collection:", item.type);
+    }
   };
 
   useEffect(() => {
@@ -88,7 +106,7 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
   }, []);
 
   return (
-    <div className={`relative h-screen w-full bg-stone-800 ${getCursorClass()}`}>
+    <DropZone targetType="material-space" onDrop={handleDrop} className={`relative h-screen w-full bg-stone-800 ${getCursorClass()}`}>
       <canvas ref={canvasRef} id="materialCanvas" />
       <button
         onClick={onToggle}
@@ -98,9 +116,17 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
       </button>
       {showContent && <MaterialDrawer />}
       {showContent && <Toolbar />}
-      {fabricCanvasRef.current && showContent && (
-        <Magazine canvas={fabricCanvasRef.current} />
-      )}
-    </div>
+      {fabricCanvasRef.current && showContent && 
+        magazines.map(magazine => (
+          <Magazine 
+            key={magazine.id}
+            id={magazine.id}
+            canvas={fabricCanvasRef.current!} 
+            collection={magazine.collection}
+            position={magazine.position}
+          />
+        ))
+      }
+    </DropZone>
   );
 }

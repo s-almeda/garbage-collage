@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef } from "react";
+import { useDragHandler, DragItem } from '@/context/DnDContext';
+
 interface CollectionProps {
   id: string;
   coverImage?: string;
@@ -9,9 +12,38 @@ interface CollectionProps {
 }
 
 export default function Collection({ id, coverImage, title, subtitle, onClick }: CollectionProps) {
+  const { handleMouseDown } = useDragHandler();
+  const isDraggingRef = useRef(false);
+
+  const dragItem: DragItem = {
+    type: 'collection',
+    id,
+    data: {
+      id,
+      title,
+      subtitle,
+      coverImage,
+    }
+  };
+
+  const handleDragStart = (e: React.MouseEvent<HTMLButtonElement>) => {
+    isDraggingRef.current = false;
+    handleMouseDown(e, dragItem, () => {
+      isDraggingRef.current = true;
+    });
+  };
+
+  const handleClick = () => {
+    if (!isDraggingRef.current) {
+      onClick();
+    }
+    isDraggingRef.current = false;
+  };
+
   return (
     <button
-      onClick={onClick}
+      onMouseDown={handleDragStart}
+      onClick={handleClick}
       className="w-full flex flex-col gap-2 p-2  hover:bg-neutral-600 transition-colors group"
     >
       {/* Cover Image - magazine style (taller than wide) */}
@@ -29,7 +61,7 @@ export default function Collection({ id, coverImage, title, subtitle, onClick }:
       
       {/* Title - centered, uppercase */}
       <div className="text-center">
-        <p className="text-white text-xs font-bold uppercase tracking-wide truncate">{title}</p>
+        <p className="text-white text-xs font-bold uppercase italic tracking-wide">{title}</p>
         {subtitle && (
           <p className="text-neutral-400 text-[10px] font-sans truncate mt-0.5">{subtitle}</p>
         )}

@@ -5,6 +5,12 @@ import { CollectionListItem } from "@/lib/types/collections";
 
 export type ToolType = "pointer" | "scissors-rectangle" | "scissors-freehand" | "hand";
 
+export interface MagazineInstance {
+  id: string;
+  collection: any;
+  position: { x: number; y: number };
+}
+
 interface AppContextType {
   currentTool: ToolType;
   setCurrentTool: (tool: ToolType) => void;
@@ -16,6 +22,9 @@ interface AppContextType {
   setIsLoadingCollections: (loading: boolean) => void;
   currentUser: string;
   setCurrentUser: (user: string) => void;
+  magazines: MagazineInstance[];
+  setMagazines: (magazines: MagazineInstance[]) => void;
+  updateMagazinePosition: (id: string, position: { x: number; y: number }) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -29,6 +38,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [collections, setCollections] = useState<CollectionListItem[]>([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
   const [currentUser, setCurrentUser] = useState("shm"); // Hardcoded for now
+  const [magazines, setMagazines] = useState<MagazineInstance[]>([]);
+
+  const updateMagazinePosition = (id: string, position: { x: number; y: number }) => {
+    setMagazines(prev => 
+      prev.map(mag => 
+        mag.id === id ? { ...mag, position } : mag
+      )
+    );
+  };
 
   return (
     <AppContext.Provider value={{ 
@@ -42,6 +60,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsLoadingCollections,
       currentUser,
       setCurrentUser,
+      magazines,
+      setMagazines,
+      updateMagazinePosition,
     }}>
       {children}
     </AppContext.Provider>
