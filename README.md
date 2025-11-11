@@ -1,6 +1,6 @@
 
 ## garbage collage
-make colalges with other people's (digital) trash
+make collages with other people's (digital) trash
 
 rough collage goals...
 - cut things out that aren't rectangular
