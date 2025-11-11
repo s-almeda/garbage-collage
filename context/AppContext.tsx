@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { CollectionListItem } from "@/lib/types/collections";
 
 export type ToolType = "pointer" | "scissors-rectangle" | "scissors-freehand" | "hand";
 
@@ -9,6 +10,12 @@ interface AppContextType {
   setCurrentTool: (tool: ToolType) => void;
   toolbarPosition: { x: number; y: number };
   setToolbarPosition: (position: { x: number; y: number }) => void;
+  collections: CollectionListItem[];
+  setCollections: (collections: CollectionListItem[]) => void;
+  isLoadingCollections: boolean;
+  setIsLoadingCollections: (loading: boolean) => void;
+  currentUser: string;
+  setCurrentUser: (user: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -16,12 +23,26 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentTool, setCurrentTool] = useState<ToolType>("pointer");
   const [toolbarPosition, setToolbarPosition] = useState({ 
-    x: typeof window !== 'undefined' ? window.innerWidth - 300 : 0, 
+    x: typeof window !== 'undefined' ? window.innerWidth - 100 : 0, 
     y: 32 
   });
+  const [collections, setCollections] = useState<CollectionListItem[]>([]);
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false);
+  const [currentUser, setCurrentUser] = useState("shm"); // Hardcoded for now
 
   return (
-    <AppContext.Provider value={{ currentTool, setCurrentTool, toolbarPosition, setToolbarPosition }}>
+    <AppContext.Provider value={{ 
+      currentTool, 
+      setCurrentTool, 
+      toolbarPosition, 
+      setToolbarPosition,
+      collections,
+      setCollections,
+      isLoadingCollections,
+      setIsLoadingCollections,
+      currentUser,
+      setCurrentUser,
+    }}>
       {children}
     </AppContext.Provider>
   );

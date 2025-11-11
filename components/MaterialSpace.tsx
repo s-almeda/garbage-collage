@@ -6,6 +6,7 @@ import Magazine from "./Magazine";
 import Toolbar from "./Toolbar";
 import MaterialDrawer from "./MaterialDrawer";
 import { useApp } from "@/context/AppContext";
+import { getAllCollections } from "@/lib/api/collections";
 
 interface MaterialSpaceProps {
   onToggle: () => void;
@@ -16,7 +17,7 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [showContent, setShowContent] = useState(false);
-  const { currentTool } = useApp();
+  const { currentTool, setCollections, setIsLoadingCollections } = useApp();
 
   const getCursorClass = () => {
     if (currentTool === "hand") return "cursor-grab";
@@ -36,6 +37,25 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
       return () => clearTimeout(timer);
     }
   }, [isActive]);
+
+  // Fetch collections when MaterialSpace becomes active
+  useEffect(() => {
+    if (isActive) {
+      const fetchCollections = async () => {
+        setIsLoadingCollections(true);
+        try {
+          const collections = await getAllCollections();
+          setCollections(collections);
+        } catch (error) {
+          console.error("Failed to fetch collections:", error);
+        } finally {
+          setIsLoadingCollections(false);
+        }
+      };
+
+      fetchCollections();
+    }
+  }, [isActive, setCollections, setIsLoadingCollections]);
 
   useEffect(() => {
     if (!canvasRef.current) return;

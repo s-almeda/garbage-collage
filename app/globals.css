@@ -24,3 +24,42 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+.canvas {
+  /* position: relative; */
+  background-color: rgba(238, 231, 214, 0.712); /* Fully transparent background color */
+}
+
+.canvas::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("https://dl.polyhaven.org/file/ph-assets/Textures/png/4k/book_pattern/book_pattern_disp_4k.png");
+  background-size: cover;
+  background-blend-mode: multiply;
+  opacity: 0.2; /* Adjust texture transparency */
+  z-index: -1; /* Ensure it stays behind the content */
+}
+
+.grainy {
+  /* position: relative; */
+  background-color: rgba(227, 221, 211, 0.807); /* Fully transparent background color */
+}
+
+.grainy::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='noise-filter'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='0.64'/><feFuncG type='linear' slope='0.64'/><feFuncB type='linear' slope='0.64'/><feFuncA type='linear' slope='0.41'/></feComponentTransfer><feComponentTransfer><feFuncR type='linear' slope='3' intercept='-1.00'/><feFuncG type='linear' slope='3' intercept='-1.00'/><feFuncB type='linear' slope='3' intercept='-1.00'/></feComponentTransfer></filter><rect width='100%' height='100%' filter='url(%23noise-filter)'/></svg>");
+  background-size: cover;
+  background-blend-mode: multiply;
+  opacity: 0.45; /* Adjust texture transparency */
+  z-index: -1; /* Ensure it stays behind the content */
+}
