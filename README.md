@@ -1,36 +1,24 @@
+
+## garbage collage
+make colalges with other people's (digital) trash
+
+rough collage goals...
+- cut things out that aren't rectangular
+- drag things from your "table" (the bottom half) to the "assembly" canvas in the top half of the screen where you can assemble your composition - and it supports
+- resizing
+- relayering
+- exporting as an image
+- user gallery of "finished" collage compositions
+- trash trash (ability to drag things to the bottom right to delete them lol)
+- add more "magazines" and make their contents random-er
+- make more "kinds" of magazines  and the ability to change which kind something is. which would just aesthetically change how it's displayed. (newspapers, stacks of paper, cards)
+- actually let other people upload their own trash (?!)
+  - thought, maybe just let people submit trash to a google form or something? and then manually update the database, so the trash collection is curated and not full of user submitted spam or worse
+- a reach goal: instead of showing you all the available trash collections. when you want a new "magazine" you have to click a button that says "dig through the trash" and a little animation of a raccoon in the garbage comes up or something. and you have to wait a couple seconds. then there's a New item Get! type screen like "YOU FOUND: *frames from a video shm accidentally took in may 2025*" and then you may use that as a collection
+
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
 
-First, run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
