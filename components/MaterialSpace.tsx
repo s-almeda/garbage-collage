@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as fabric from "fabric";
-import Magazine from "./Magazine";
+import html2canvas from "html2canvas-pro";
+import { MagazineContainer } from "./Magazine";
 import Toolbar from "./Toolbar";
 import MaterialDrawer from "./MaterialDrawer";
+import Cutout from "./Cutout";
 import { useApp } from "@/context/AppContext";
 import { getAllCollections } from "@/lib/api/collections";
 import { DropZone, DragItem, useDnD } from '@/context/DnDContext';
@@ -17,9 +19,15 @@ interface MaterialSpaceProps {
 export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
+  const materialSpaceRef = useRef<HTMLDivElement>(null);
   const [showContent, setShowContent] = useState(false);
-  const { currentTool, setCollections, setIsLoadingCollections, magazines, setMagazines } = useApp();
+  const { currentTool, setCollections, setIsLoadingCollections, magazines, setMagazines, addCutout, cutouts } = useApp();
   const { dragState } = useDnD();
+  
+  // Selection rectangle state
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
 
   const getCursorClass = () => {
     if (currentTool === "hand") return "cursor-grab";
@@ -42,6 +50,131 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
       console.log("Item type is not collection:", item.type);
     }
   };
+
+  // Calculate selection rectangle for rendering
+  const getSelectionRect = () => {
+    if (!selectionStart || !selectionEnd) return null;
+    
+    const x = Math.min(selectionStart.x, selectionEnd.x);
+    const y = Math.min(selectionStart.y, selectionEnd.y);
+    const width = Math.abs(selectionEnd.x - selectionStart.x);
+    const height = Math.abs(selectionEnd.y - selectionStart.y);
+    
+    return { x, y, width, height };
+  };
+
+  // Use CAPTURE phase to intercept scissors events BEFORE they reach children
+  const handleMouseDownCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (currentTool === "scissors-rectangle" || currentTool === "scissors-freehand") {
+      console.log("✂️ scissors tool active (capture phase), currentTool:", currentTool);
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (currentTool === "scissors-rectangle") {
+        setIsSelecting(true);
+        setSelectionStart({ x: e.clientX, y: e.clientY });
+        setSelectionEnd({ x: e.clientX, y: e.clientY });
+      }
+    }
+  };
+
+    // Capture phase for mouse move
+  const handleMouseMoveCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (currentTool === "scissors-rectangle" || currentTool === "scissors-freehand") {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (isSelecting && currentTool === "scissors-rectangle") {
+        setSelectionEnd({ x: e.clientX, y: e.clientY });
+      }
+    }
+  };
+
+  // Capture phase for mouse up
+  const handleMouseUpCapture = async (e: React.MouseEvent<HTMLDivElement>) => {
+    if (currentTool === "scissors-rectangle" || currentTool === "scissors-freehand") {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (!isSelecting || currentTool !== "scissors-rectangle" || !materialSpaceRef.current) {
+        setIsSelecting(false);
+        return;
+      }
+      
+      const rect = getSelectionRect();
+      if (!rect || rect.width < 5 || rect.height < 5) {
+        // Ignore very small selections
+        console.log("✂️ selection too small, ignoring");
+        setIsSelecting(false);
+        setSelectionStart(null);
+        setSelectionEnd(null);
+        return;
+      }
+      
+      console.log("✂️ making a cutout", rect);
+      
+      try {
+        // Temporarily hide the selection overlay
+        const selectionOverlay = document.querySelector('.selection-overlay') as HTMLElement;
+        if (selectionOverlay) {
+          selectionOverlay.style.display = 'none';
+        }
+        
+        // Capture the entire MaterialSpace with html2canvas-pro (supports lab() colors!)
+        const canvas = await html2canvas(materialSpaceRef.current, {
+          backgroundColor: "#292524",
+          scale: 1,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+        });
+        
+        // Restore selection overlay
+        if (selectionOverlay) {
+          selectionOverlay.style.display = '';
+        }
+        
+        // Create a temporary canvas to crop the selection
+        const croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = rect.width;
+        croppedCanvas.height = rect.height;
+        const ctx = croppedCanvas.getContext('2d');
+        
+        if (ctx) {
+          // Draw the cropped portion
+          ctx.drawImage(
+            canvas,
+            rect.x, rect.y, rect.width, rect.height,
+            0, 0, rect.width, rect.height
+          );
+          
+          // Convert to base64
+          const imageData = croppedCanvas.toDataURL('image/png');
+          
+          // Create cutout
+          const cutout = {
+            id: `cutout-${Date.now()}`,
+            imageData,
+            position: { x: rect.x, y: rect.y },
+            size: { width: rect.width, height: rect.height }
+          };
+          
+          console.log("✂️ cutout created!", cutout.id);
+          addCutout(cutout);
+        }
+      } catch (error) {
+        console.error("✂️ Failed to capture selection:", error);
+        alert("Failed to create cutout. Error: " + (error as Error).message);
+      }
+      
+      // Reset selection
+      setIsSelecting(false);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+    }
+  };
+
+  const selectionRect = getSelectionRect();
 
   useEffect(() => {
     if (isActive) {
@@ -106,27 +239,54 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
   }, []);
 
   return (
-    <DropZone targetType="material-space" onDrop={handleDrop} className={`relative h-screen w-full bg-stone-800 ${getCursorClass()}`}>
-      <canvas ref={canvasRef} id="materialCanvas" />
-      <button
-        onClick={onToggle}
-        className="absolute top-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-white text-stone-800 rounded-lg font-semibold shadow-lg hover:bg-stone-100 transition-colors z-10"
+    <DropZone targetType="material-space" onDrop={handleDrop} className={`relative   h-screen w-full bg-stone-500 ${getCursorClass()}`}>
+      <div 
+        ref={materialSpaceRef}
+        className="absolute inset-0"
+        onMouseDownCapture={handleMouseDownCapture}
+        onMouseMoveCapture={handleMouseMoveCapture}
+        onMouseUpCapture={handleMouseUpCapture}
       >
-        look up
-      </button>
-      {showContent && <MaterialDrawer />}
-      {showContent && <Toolbar />}
-      {fabricCanvasRef.current && showContent && 
-        magazines.map(magazine => (
-          <Magazine 
-            key={magazine.id}
-            id={magazine.id}
-            canvas={fabricCanvasRef.current!} 
-            collection={magazine.collection}
-            position={magazine.position}
+        <canvas ref={canvasRef} id="materialCanvas" />
+        <button
+          onClick={onToggle}
+          className="absolute top-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-white text-stone-800 rounded-lg font-semibold shadow-lg hover:bg-stone-100 transition-colors z-10"
+        >
+          look up
+        </button>
+        {showContent && <MaterialDrawer />}
+        {showContent && <Toolbar />}
+        {fabricCanvasRef.current && showContent && 
+          magazines.map(magazine => (
+            <MagazineContainer
+              key={magazine.id}
+              id={magazine.id}
+              canvas={fabricCanvasRef.current!} 
+              collection={magazine.collection}
+              position={magazine.position}
+            />
+          ))
+        }
+        
+        {/* Render cutouts */}
+        {showContent && cutouts.map(cutout => (
+          <Cutout key={cutout.id} cutout={cutout} />
+        ))}
+        
+        {/* Selection rectangle overlay */}
+        {isSelecting && selectionRect && (
+          <div
+            className="absolute border-2 border-blue-500 bg-blue-500/10 pointer-events-none selection-overlay"
+            style={{
+              left: selectionRect.x,
+              top: selectionRect.y,
+              width: selectionRect.width,
+              height: selectionRect.height,
+              zIndex: 50,
+            }}
           />
-        ))
-      }
+        )}
+      </div>
     </DropZone>
   );
 }

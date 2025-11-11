@@ -30,6 +30,8 @@ export default function Toolbar() {
     setActiveTool(toolId);
     if (toolId === "scissors") {
       setShowScissorDrawer(true);
+      // Set default scissors mode (rectangle) when scissors is clicked
+      setCurrentTool(`scissors-${scissorMode}` as any);
     } else {
       setShowScissorDrawer(false);
       // Update global tool for non-scissor tools

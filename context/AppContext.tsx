@@ -11,6 +11,13 @@ export interface MagazineInstance {
   position: { x: number; y: number };
 }
 
+export interface Cutout {
+  id: string;
+  imageData: string; // base64 data URL
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+}
+
 interface AppContextType {
   currentTool: ToolType;
   setCurrentTool: (tool: ToolType) => void;
@@ -25,6 +32,11 @@ interface AppContextType {
   magazines: MagazineInstance[];
   setMagazines: (magazines: MagazineInstance[]) => void;
   updateMagazinePosition: (id: string, position: { x: number; y: number }) => void;
+  cutouts: Cutout[];
+  setCutouts: (cutouts: Cutout[]) => void;
+  addCutout: (cutout: Cutout) => void;
+  removeCutout: (id: string) => void;
+  updateCutoutPosition: (id: string, position: { x: number; y: number }) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -39,11 +51,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
   const [currentUser, setCurrentUser] = useState("shm"); // Hardcoded for now
   const [magazines, setMagazines] = useState<MagazineInstance[]>([]);
+  const [cutouts, setCutouts] = useState<Cutout[]>([]);
 
   const updateMagazinePosition = (id: string, position: { x: number; y: number }) => {
     setMagazines(prev => 
       prev.map(mag => 
         mag.id === id ? { ...mag, position } : mag
+      )
+    );
+  };
+
+  const addCutout = (cutout: Cutout) => {
+    setCutouts(prev => [...prev, cutout]);
+  };
+
+  const removeCutout = (id: string) => {
+    setCutouts(prev => prev.filter(c => c.id !== id));
+  };
+
+  const updateCutoutPosition = (id: string, position: { x: number; y: number }) => {
+    setCutouts(prev =>
+      prev.map(cutout =>
+        cutout.id === id ? { ...cutout, position } : cutout
       )
     );
   };
@@ -63,6 +92,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       magazines,
       setMagazines,
       updateMagazinePosition,
+      cutouts,
+      setCutouts,
+      addCutout,
+      removeCutout,
+      updateCutoutPosition,
     }}>
       {children}
     </AppContext.Provider>

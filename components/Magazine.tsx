@@ -6,78 +6,32 @@ import * as fabric from "fabric";
 import { useApp } from "@/context/AppContext";
 import { getCollection, getImageUrl } from "@/lib/api/collections";
 
-interface MagazineProps {
+// MagazineContainer - handles positioning and dragging
+interface MagazineContainerProps {
+  id: string;
   canvas: fabric.Canvas;
-  collection?: any;
-  position?: { x: number; y: number };
-  id?: string;
+  collection: any;
+  position: { x: number; y: number };
 }
 
-interface PageProps {
-  children: React.ReactNode;
-  type?: 'text' | 'image';
-  className?: string;
-}
-
-const Page = React.forwardRef<HTMLDivElement, PageProps>((props, ref) => {
-  return (
-    <div 
-      className={`w-full h-full flex items-center justify-center p-4 bg-white border border-gray-200 ${props.className || ''}`} 
-      ref={ref}
-    >
-      {props.children}
-    </div>
-  );
-});
-
-Page.displayName = "Page";
-
-export default function Magazine({ canvas, collection, position, id }: MagazineProps) {
-  const bookRef = useRef<any>(null);
-  const magazineRef = useRef<HTMLDivElement>(null);
+export function MagazineContainer({ id, canvas, collection, position }: MagazineContainerProps) {
   const { currentTool, updateMagazinePosition } = useApp();
-  const [collectionData, setCollectionData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const magazineStartPos = useRef<{ x: number; y: number } | null>(null);
 
-  // Fetch full collection data when collection prop changes
-  useEffect(() => {
-    if (collection?.id) {
-      setIsLoading(true);
-      getCollection(collection.id)
-        .then(data => {
-          console.log('Loaded collection data:', data);
-          setCollectionData(data);
-        })
-        .catch(error => {
-          console.error('Failed to load collection:', error);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    }
-  }, [collection?.id]);
-
-  const getCursorClass = () => {
-    if (currentTool === "hand") return "cursor-grab active:cursor-grabbing";
-    if (currentTool === "scissors-rectangle" || currentTool === "scissors-freehand") return "cursor-crosshair";
-    return "cursor-default";
-  };
-
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (currentTool === "hand" && id && position) {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(true);
-      dragStartPos.current = { x: e.clientX, y: e.clientY };
-      magazineStartPos.current = { ...position };
-    }
+    if (currentTool !== "hand") return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    magazineStartPos.current = { ...position };
   };
 
   useEffect(() => {
-    if (!isDragging || !id) return;
+    if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (dragStartPos.current && magazineStartPos.current) {
@@ -108,33 +62,93 @@ export default function Magazine({ canvas, collection, position, id }: MagazineP
     };
   }, [isDragging, id, updateMagazinePosition]);
 
-  const positionStyle = position ? {
+  const positionStyle = {
     left: `${position.x}px`,
     top: `${position.y}px`,
     transform: 'translate(-50%, -50%)'
-  } : {
-    left: '50%',
-    top: '50%',
-    transform: 'translate(-50%, -50%)'
   };
 
-  // Default spreads if no collection data
-  const defaultSpreads = [
-    { left: "bg-red-500", right: "bg-blue-500" },
-    { left: "bg-green-500", right: "bg-yellow-500" },
-    { left: "bg-purple-500", right: "bg-orange-500" },
-  ];
+  const getCursor = () => {
+    if (currentTool === "hand") return isDragging ? "cursor-grabbing" : "cursor-grab";
+    if (currentTool === "scissors-rectangle" || currentTool === "scissors-freehand") return "cursor-crosshair";
+    return "cursor-default";
+  };
+
+  return (
+    <div 
+      className={`absolute z-20 ${getCursor()}`}
+      style={positionStyle}
+    >
+      {/* Interaction layer - only active in HAND mode */}
+      {currentTool === "hand" && (
+        <div
+          className="absolute inset-0 z-30"
+          onMouseDown={handleMouseDown}
+          style={{ userSelect: 'none' }}
+        />
+      )}
+      
+      {/* Magazine content - only interactive in POINTER mode */}
+      <div style={{ pointerEvents: currentTool === "pointer" ? "auto" : "none" }}>
+        <Magazine canvas={canvas} collection={collection} />
+      </div>
+    </div>
+  );
+}
+
+// Magazine - pure content rendering
+interface MagazineProps {
+  canvas: fabric.Canvas;
+  collection?: any;
+}
+
+interface PageProps {
+  children: React.ReactNode;
+  type?: 'text' | 'image';
+  className?: string;
+}
+
+const Page = React.forwardRef<HTMLDivElement, PageProps>((props, ref) => {
+  return (
+    <div 
+      className={`w-full h-full flex items-center justify-center p-4 bg-white border border-gray-200 ${props.className || ''}`} 
+      ref={ref}
+    >
+      {props.children}
+    </div>
+  );
+});
+
+Page.displayName = "Page";
+
+export default function Magazine({ canvas, collection }: MagazineProps) {
+  const bookRef = useRef<any>(null);
+  const [collectionData, setCollectionData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch full collection data when collection prop changes
+  useEffect(() => {
+    if (collection?.id) {
+      setIsLoading(true);
+      getCollection(collection.id)
+        .then(data => {
+          console.log('Loaded collection data:', data);
+          setCollectionData(data);
+        })
+        .catch(error => {
+          console.error('Failed to load collection:', error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [collection?.id]);
 
   // Render loading state
   if (collection && isLoading) {
     return (
-      <div 
-        className={`absolute z-20 ${getCursorClass()}`}
-        style={positionStyle}
-      >
-        <div className="w-[400px] h-[500px] bg-white border-2 border-gray-300 flex items-center justify-center">
-          <div className="text-gray-500">Loading collection...</div>
-        </div>
+      <div className="w-[400px] h-[500px] bg-white border-2 border-gray-300 flex items-center justify-center">
+        <div className="text-gray-500">Loading collection...</div>
       </div>
     );
   }
@@ -143,6 +157,12 @@ export default function Magazine({ canvas, collection, position, id }: MagazineP
   const generatePages = () => {
     if (!collectionData?.pages) {
       // Fallback to default spreads
+      const defaultSpreads = [
+        { left: "bg-red-500", right: "bg-blue-500" },
+        { left: "bg-green-500", right: "bg-yellow-500" },
+        { left: "bg-purple-500", right: "bg-orange-500" },
+      ];
+      
       return defaultSpreads.flatMap((spread, index) => [
         <Page key={`left-${index}`} className={spread.left}>
           <h2 className="text-6xl font-bold text-white">L{index + 1}</h2>
@@ -171,8 +191,8 @@ export default function Magazine({ canvas, collection, position, id }: MagazineP
               <span className="text-gray-600">📁</span>
             </div>
           )}
-            <h3 className="text-lg font-bold text-gray-800 mb-2 uppercase">{collectionData.name}</h3>
-          <p className="text-sm text-gray-600">{collectionData.description}</p>
+            <h3 className="text-lg font-bold text-gray-800 mb-2 italic uppercase">{collectionData.name}</h3>
+          <p className="text-xs text-gray-600 whitespace-pre-wrap truncate">{collectionData.description}</p>
         </div>
       </Page>
     );
@@ -182,7 +202,7 @@ export default function Magazine({ canvas, collection, position, id }: MagazineP
       if (page.type === 'text') {
         renderedPages.push(
           <Page key={page.uid} type="text" className="bg-white">
-            <div className="text-sm text-gray-800 leading-relaxed overflow-hidden">
+            <div className="text-lg font-serif truncate text-gray-800 leading-relaxed overflow-hidden">
               <p className="whitespace-pre-wrap">{page.content}</p>
             </div>
           </Page>
@@ -213,41 +233,34 @@ export default function Magazine({ canvas, collection, position, id }: MagazineP
   };
 
   return (
-    <div 
-      ref={magazineRef}
-      className={`absolute z-20 ${getCursorClass()} ${isDragging ? 'select-none' : ''}`}
-      style={positionStyle}
-      onMouseDown={currentTool === "hand" ? handleMouseDown : undefined}
+    <HTMLFlipBook
+      width={350}
+      height={500}
+      size="fixed"
+      minWidth={315}
+      maxWidth={1000}
+      minHeight={400}
+      maxHeight={1533}
+      maxShadowOpacity={0.5}
+      showCover={true}
+      mobileScrollSupport={false}
+      ref={bookRef}
+      className=""
+      style={{}}
+      startPage={0}
+      drawShadow={true}
+      flippingTime={1000}
+      usePortrait={false}
+      startZIndex={0}
+      autoSize={true}
+      clickEventForward={true}
+      useMouseEvents={true}
+      swipeDistance={30}
+      renderOnlyPageLengthChange={false}
+      showPageCorners={true}
+      disableFlipByClick={false}
     >
-      <HTMLFlipBook
-        width={400}
-        height={500}
-        size="fixed"
-        minWidth={315}
-        maxWidth={1000}
-        minHeight={400}
-        maxHeight={1533}
-        maxShadowOpacity={0.5}
-        showCover={true}
-        mobileScrollSupport={false}
-        ref={bookRef}
-        className=""
-        style={{}}
-        startPage={0}
-        drawShadow={true}
-        flippingTime={1000}
-        usePortrait={false}
-        startZIndex={0}
-        autoSize={true}
-        clickEventForward={currentTool !== "hand"}
-        useMouseEvents={currentTool !== "hand"}
-        swipeDistance={30}
-        renderOnlyPageLengthChange={false}
-        showPageCorners={true}
-        disableFlipByClick={currentTool === "hand"}
-      >
-        {generatePages()}
-      </HTMLFlipBook>
-    </div>
+      {generatePages()}
+    </HTMLFlipBook>
   );
 }
