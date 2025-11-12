@@ -7,6 +7,7 @@ import { MagazineContainer } from "./Magazine";
 import Toolbar from "./Toolbar";
 import MaterialDrawer from "./MaterialDrawer";
 import Cutout from "./Cutout";
+import LookUpButton from "./LookUpButton";
 import { useApp } from "@/context/AppContext";
 import { getAllCollections } from "@/lib/api/collections";
 import { DropZone, DragItem, useDnD } from '@/context/DnDContext';
@@ -255,12 +256,7 @@ export default function MaterialSpace({ onToggle, isActive }: MaterialSpaceProps
         onMouseUpCapture={handleMouseUpCapture}
       >
         <canvas ref={canvasRef} id="materialCanvas" />
-        <button
-          onClick={onToggle}
-          className="absolute top-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-white text-stone-800 rounded-lg font-semibold shadow-lg hover:bg-stone-100 transition-colors z-10"
-        >
-          look up
-        </button>
+        <LookUpButton onToggle={onToggle} />
         {showContent && <MaterialDrawer />}
         {showContent && <Toolbar />}
         {fabricCanvasRef.current && showContent && 

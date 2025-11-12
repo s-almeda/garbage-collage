@@ -1,7 +1,7 @@
 // context/DnDContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export interface DragItem {
   type: 'collection' | 'magazine' | 'page' | 'cutout';
@@ -21,6 +21,8 @@ interface DnDContextType {
   updateDragPosition: (position: { x: number; y: number }) => void;
   endDrag: () => void;
   isValidDropTarget: (targetType: string) => boolean;
+  isMouseDown: boolean;
+  currentMousePosition: { x: number; y: number } | null;
 }
 
 const DnDContext = createContext<DnDContextType | undefined>(undefined);
@@ -35,6 +37,34 @@ export function DnDProvider({ children }: DnDProviderProps) {
     dragItem: null,
     dragPosition: null,
   });
+
+  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [currentMousePosition, setCurrentMousePosition] = useState<{ x: number; y: number } | null>(null);
+
+  // Global mouse tracking
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      setIsMouseDown(true);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setCurrentMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      setIsMouseDown(false);
+    };
+
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   const startDrag = (item: DragItem, position: { x: number; y: number }) => {
     setDragState({
@@ -67,6 +97,7 @@ export function DnDProvider({ children }: DnDProviderProps) {
       'material-space': ['collection'], // Collections can be dropped on MaterialSpace
       'magazine': ['page'], // Pages can be dropped on Magazine
       'canvas': ['page', 'cutout'], // Pages and cutouts can be dropped on canvas
+      'look-up-button': ['cutout'], // Cutouts can be dropped on look up button
     };
     
     return dropRules[targetType]?.includes(dragState.dragItem.type) || false;
@@ -78,6 +109,8 @@ export function DnDProvider({ children }: DnDProviderProps) {
     updateDragPosition,
     endDrag,
     isValidDropTarget,
+    isMouseDown,
+    currentMousePosition,
   };
 
   return (

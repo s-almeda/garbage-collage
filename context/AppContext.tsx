@@ -18,6 +18,16 @@ export interface Cutout {
   size: { width: number; height: number };
 }
 
+export interface TransitioningCutout {
+  cutout: Cutout;
+  mouseOffset: { x: number; y: number };
+}
+
+export interface CompositionCanvas {
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+}
+
 interface AppContextType {
   currentTool: ToolType;
   setCurrentTool: (tool: ToolType) => void;
@@ -38,6 +48,10 @@ interface AppContextType {
   removeCutout: (id: string) => void;
   updateCutoutPosition: (id: string, position: { x: number; y: number }) => void;
   updateCutout: (id: string, updates: Partial<Cutout>) => void;
+  transitioningCutout: TransitioningCutout | null;
+  setTransitioningCutout: (cutout: TransitioningCutout | null) => void;
+  compositionCanvas: CompositionCanvas;
+  setCompositionCanvas: (canvas: CompositionCanvas) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -53,6 +67,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState("shm"); // Hardcoded for now
   const [magazines, setMagazines] = useState<MagazineInstance[]>([]);
   const [cutouts, setCutouts] = useState<Cutout[]>([]);
+  const [transitioningCutout, setTransitioningCutout] = useState<TransitioningCutout | null>(null);
+  const [compositionCanvas, setCompositionCanvas] = useState<CompositionCanvas>({
+    position: { x: 0, y: 0 }, // Will be centered on mount
+    size: { width: 600, height: 800 } // Portrait letter ratio (3:4)
+  });
 
   const updateMagazinePosition = (id: string, position: { x: number; y: number }) => {
     setMagazines(prev => 
@@ -107,6 +126,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeCutout,
       updateCutoutPosition,
       updateCutout,
+      transitioningCutout,
+      setTransitioningCutout,
+      compositionCanvas,
+      setCompositionCanvas,
     }}>
       {children}
     </AppContext.Provider>

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { useApp, Cutout as CutoutType } from "@/context/AppContext";
+import { useDnD } from "@/context/DnDContext";
 
 interface CutoutProps {
   cutout: CutoutType;
@@ -9,6 +10,7 @@ interface CutoutProps {
 
 export default function Cutout({ cutout }: CutoutProps) {
   const { currentTool, updateCutoutPosition, removeCutout } = useApp();
+  const { startDrag, updateDragPosition, endDrag } = useDnD();
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const cutoutRef = useRef<HTMLDivElement>(null);
@@ -19,37 +21,60 @@ export default function Cutout({ cutout }: CutoutProps) {
     e.preventDefault();
     e.stopPropagation();
     
-    setIsDragging(true);
+    const startPos = { x: e.clientX, y: e.clientY };
     setDragOffset({
       x: e.clientX - cutout.position.x,
       y: e.clientY - cutout.position.y,
     });
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
     
-    const newX = e.clientX - dragOffset.x;
-    const newY = e.clientY - dragOffset.y;
-    
-    updateCutoutPosition(cutout.id, { x: newX, y: newY });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const currentPos = { x: moveEvent.clientX, y: moveEvent.clientY };
       
-      return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [isDragging, dragOffset]);
+      // Start drag if we've moved enough (prevents accidental drags on clicks)
+      const distance = Math.sqrt(
+        Math.pow(currentPos.x - startPos.x, 2) + Math.pow(currentPos.y - startPos.y, 2)
+      );
+      
+      if (distance > 5) {
+        setIsDragging(true);
+        // Start DnD context drag
+        startDrag({
+          type: 'cutout',
+          id: cutout.id,
+          data: cutout
+        }, currentPos);
+        
+        document.removeEventListener('mousemove', handleMouseMove);
+        
+        // Switch to drag mode
+        const handleDragMove = (dragEvent: MouseEvent) => {
+          const newX = dragEvent.clientX - dragOffset.x;
+          const newY = dragEvent.clientY - dragOffset.y;
+          
+          updateCutoutPosition(cutout.id, { x: newX, y: newY });
+          updateDragPosition({ x: dragEvent.clientX, y: dragEvent.clientY });
+        };
+        
+        const handleDragEnd = () => {
+          setIsDragging(false);
+          endDrag();
+          document.removeEventListener('mousemove', handleDragMove);
+          document.removeEventListener('mouseup', handleDragEnd);
+        };
+        
+        document.addEventListener('mousemove', handleDragMove);
+        document.addEventListener('mouseup', handleDragEnd);
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
   const getCursorClass = () => {
     if (currentTool === "hand") {
