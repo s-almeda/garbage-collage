@@ -288,9 +288,22 @@ export default function AssemblySpace({ onToggle }: AssemblySpaceProps) {
   };
 
   const handleExport = async () => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !compositionCanvasRef.current) return;
 
     console.log("📸 Exporting composition canvas...");
+    
+    // Get the actual position and size from the fabric object
+    const rect = compositionCanvasRef.current;
+    const exportPosition = {
+      x: rect.left!,
+      y: rect.top!
+    };
+    const exportSize = {
+      width: rect.width!,
+      height: rect.height!
+    };
+    
+    console.log("Export coords:", { position: exportPosition, size: exportSize });
     
     // Get the canvas element
     const canvasElement = canvasRef.current;
@@ -310,22 +323,22 @@ export default function AssemblySpace({ onToggle }: AssemblySpaceProps) {
 
       // Crop to just the composition canvas area
       const croppedCanvas = document.createElement('canvas');
-      croppedCanvas.width = compositionCanvas.size.width;
-      croppedCanvas.height = compositionCanvas.size.height;
+      croppedCanvas.width = exportSize.width;
+      croppedCanvas.height = exportSize.height;
       const ctx = croppedCanvas.getContext('2d');
 
       if (ctx) {
         // Draw just the composition canvas area
         ctx.drawImage(
           screenshot,
-          compositionCanvas.position.x * 2, // Account for scale=2
-          compositionCanvas.position.y * 2,
-          compositionCanvas.size.width * 2,
-          compositionCanvas.size.height * 2,
+          exportPosition.x * 2, // Account for scale=2
+          exportPosition.y * 2,
+          exportSize.width * 2,
+          exportSize.height * 2,
           0,
           0,
-          compositionCanvas.size.width,
-          compositionCanvas.size.height
+          exportSize.width,
+          exportSize.height
         );
 
         // Download the image
